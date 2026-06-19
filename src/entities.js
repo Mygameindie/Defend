@@ -35,6 +35,12 @@ export class Unit {
     this.slowFactor = 1;   // <1 while slowed
     this.slowTimer = 0;    // seconds the slow lasts
 
+    // animation state (drives which sprite clip plays)
+    this.moving = false;   // marching this frame vs. fighting in place
+    this.skillTimer = 0;   // >0 while the skill animation plays
+    this.corpseTimer = 0;  // >0 while the death animation plays before removal
+    this._anim = null;     // renderer scratch: { state, idx, t }
+
     // little bob animation
     this.bob = Math.random() * Math.PI * 2;
   }
@@ -54,7 +60,19 @@ export class Unit {
       amount -= absorbed;
     }
     this.hp -= amount;
-    if (this.hp <= 0) { this.hp = 0; this.dead = true; }
+    if (this.hp <= 0 && !this.dead) {
+      this.hp = 0;
+      this.dead = true;
+      this.corpseTimer = 0.6;        // linger to play the death animation
+    }
+  }
+
+  // Which animation clip should be showing right now.
+  spriteState() {
+    if (this.dead) return 'death';
+    if (this.skillTimer > 0) return 'skill';
+    if (!this.moving) return 'attack';
+    return 'run';
   }
 
   heal(amount) { this.hp = Math.min(this.maxHp, this.hp + amount); }
@@ -70,6 +88,7 @@ export class Unit {
       this.slowTimer -= dt;
       if (this.slowTimer <= 0) this.slowFactor = 1;
     }
+    if (this.skillTimer > 0) this.skillTimer = Math.max(0, this.skillTimer - dt);
   }
 
   // Build skill gauge over time while alive (player only).

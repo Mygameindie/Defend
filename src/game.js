@@ -81,6 +81,7 @@ export class Game {
     const s = unit.t.skill;
     unit.skillReady = false;
     unit.gauge = 0;
+    unit.skillTimer = 0.5; // play the skill animation briefly
 
     switch (s.kind) {
       // ---- offensive ----
@@ -228,7 +229,7 @@ export class Game {
 
   updateUnits(dt) {
     for (const u of this.units) {
-      if (u.dead) continue;
+      if (u.dead) { u.corpseTimer -= dt; continue; } // tick death animation
       u.bob += dt * 6;
       u.chargeGauge(dt);
       u.updateStatuses(dt);
@@ -241,6 +242,7 @@ export class Game {
           : Math.abs(target.x - u.x);
         if (dist <= u.t.range) {
           // In range: attack instead of moving.
+          u.moving = false;
           if (u.atkTimer <= 0) {
             u.atkTimer = u.t.cooldown;
             this.performAttack(u, target);
@@ -249,6 +251,7 @@ export class Game {
         }
       }
       // March forward (slowed if a slow effect is active).
+      u.moving = true;
       u.x += u.moveSpeed * u.dir * dt;
       // clamp so units don't walk into the opposing base spawn
       u.x = Math.max(WORLD.playerBaseX, Math.min(WORLD.enemyBaseX, u.x));
@@ -323,7 +326,8 @@ export class Game {
   updateEffects(dt) { for (const e of this.effects) e.update(dt); }
 
   cleanup() {
-    this.units = this.units.filter(u => !u.dead);
+    // keep dead units around briefly so their death animation can play
+    this.units = this.units.filter(u => !u.dead || u.corpseTimer > 0);
     this.projectiles = this.projectiles.filter(p => !p.dead);
     this.effects = this.effects.filter(e => !e.dead);
   }

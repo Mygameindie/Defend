@@ -3,6 +3,7 @@ import { Game } from './game.js';
 import { Renderer } from './renderer.js';
 import { UI } from './ui.js';
 import { loadCharacters, DOCK_ORDER } from './characters.js';
+import { loadSprites } from './sprites.js';
 
 const overlay = document.getElementById('overlay');
 const result = document.getElementById('result');
@@ -13,8 +14,13 @@ init();
 
 async function init() {
   // Characters must be loaded before the Game/UI are built.
+  // Sprites are optional (emoji fallback), so load them in parallel and
+  // never let a sprite problem block the game.
   try {
-    await loadCharacters();
+    await Promise.all([
+      loadCharacters(),
+      loadSprites().catch(err => console.warn('sprites disabled:', err)),
+    ]);
   } catch (err) {
     console.error(err);
     const startBtn = document.getElementById('startBtn');

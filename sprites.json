@@ -1,0 +1,23 @@
+{
+  "notes": [
+    "Add animations for your characters here. The key must match a character 'id' from characters.json.",
+    "Each character can define clips for these states: run, attack, skill, death. Any you omit fall back (death/skill -> run/attack), and characters with NO sprites just use the emoji look.",
+    "State meanings: run = marching, attack = fighting in place, skill = playing while its special fires, death = played once when it dies.",
+    "Two ways to define a clip:",
+    "  1) Frame list:  \"run\": { \"frames\": [\"assets/hero/run1.png\", \"assets/hero/run2.png\"], \"fps\": 10 }",
+    "  2) Sprite sheet (one horizontal row): \"attack\": { \"sheet\": \"assets/hero/attack.png\", \"frameWidth\": 64, \"frameHeight\": 64, \"count\": 6, \"row\": 0, \"fps\": 12 }",
+    "Options: fps (frames per second, default 10), loop (default true; death defaults to false so it stops on the last frame).",
+    "'facesRight': false at the character level if your art faces left (it is flipped automatically per side).",
+    "Drop your image files anywhere reachable by the page (assets/ is provided). Then reload — no code changes needed.",
+    "The 'ranger' below uses the generated placeholder art in assets/ranger/ (see tools/gen_sample_sprites.mjs). Replace those files, or add new character ids, with your own art."
+  ],
+  "sprites": {
+    "ranger": {
+      "facesRight": true,
+      "run":    { "frames": ["assets/ranger/run1.svg",  "assets/ranger/run2.svg",  "assets/ranger/run3.svg", "assets/ranger/run4.svg"], "fps": 10 },
+      "attack": { "frames": ["assets/ranger/atk1.svg",  "assets/ranger/atk2.svg",  "assets/ranger/atk3.svg"], "fps": 14 },
+      "skill":  { "frames": ["assets/ranger/skill1.svg","assets/ranger/skill2.svg","assets/ranger/skill3.svg"], "fps": 14 },
+      "death":  { "frames": ["assets/ranger/die1.svg",  "assets/ranger/die2.svg",  "assets/ranger/die3.svg"], "fps": 10, "loop": false }
+    }
+  }
+}

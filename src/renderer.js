@@ -1,10 +1,13 @@
 // Canvas renderer: draws the lane, bases, units, projectiles, and effects.
 import { WORLD, COLORS } from './config.js';
+import { SPRITES, advanceFrame } from './sprites.js';
 
 export class Renderer {
   constructor(canvas) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
+    this.lastTime = performance.now();
+    this.dt = 0;
   }
 
   // Convert a CSS-pixel pointer position into world coordinates.
@@ -17,6 +20,10 @@ export class Renderer {
   }
 
   draw(game) {
+    const now = performance.now();
+    this.dt = Math.min(0.1, (now - this.lastTime) / 1000); // clamp for tab switches
+    this.lastTime = now;
+
     const ctx = this.ctx;
     ctx.clearRect(0, 0, WORLD.width, WORLD.height);
     this.drawBackground(ctx);
@@ -95,6 +102,11 @@ export class Renderer {
     const bobY = Math.sin(u.bob) * 2;
     const x = u.x, y = u.y + bobY;
     const r = u.t.radius;
+    const sprite = SPRITES[u.t.id];
+    const alive = !u.dead;
+
+    // corpses fade out over their death-animation window
+    ctx.globalAlpha = alive ? 1 : Math.max(0, u.corpseTimer / 0.6);
 
     // shadow
     ctx.fillStyle = 'rgba(0,0,0,0.35)';
@@ -102,47 +114,46 @@ export class Renderer {
     ctx.ellipse(u.x, u.y + r * 0.9, r, r * 0.4, 0, 0, Math.PI * 2);
     ctx.fill();
 
-    // shield aura
-    if (u.shield > 0) {
-      ctx.strokeStyle = 'rgba(159,231,255,0.8)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(x, y, r + 5, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-    // immortal aura: pulsing gold halo
-    if (u.invuln > 0) {
-      const p = 0.5 + 0.5 * Math.sin(Date.now() / 90);
-      ctx.strokeStyle = `rgba(255,213,74,${0.6 + p * 0.4})`;
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(x, y, r + 8, 0, Math.PI * 2);
-      ctx.stroke();
-    }
-    // attack buff: red glow ring
-    if (u.atkBuffTimer > 0) {
-      ctx.strokeStyle = 'rgba(255,140,80,0.85)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.arc(x, y, r + 3, 0, Math.PI * 2);
-      ctx.stroke();
+    // status rings (only while alive)
+    if (alive) {
+      if (u.shield > 0) {
+        ctx.strokeStyle = 'rgba(159,231,255,0.8)';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(x, y, r + 5, 0, Math.PI * 2); ctx.stroke();
+      }
+      if (u.invuln > 0) { // immortal: pulsing gold halo
+        const p = 0.5 + 0.5 * Math.sin(Date.now() / 90);
+        ctx.strokeStyle = `rgba(255,213,74,${0.6 + p * 0.4})`;
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(x, y, r + 8, 0, Math.PI * 2); ctx.stroke();
+      }
+      if (u.atkBuffTimer > 0) { // attack buff: red glow ring
+        ctx.strokeStyle = 'rgba(255,140,80,0.85)';
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(x, y, r + 3, 0, Math.PI * 2); ctx.stroke();
+      }
     }
 
-    // body (tinted cyan while slowed)
-    ctx.fillStyle = u.slowTimer > 0 ? '#7fb8d6' : u.color;
-    ctx.strokeStyle = u.darkColor;
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(x, y, r, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
+    // body: animated sprite if the character has art, else emoji circle
+    if (sprite) {
+      this.drawSprite(ctx, u, sprite, r);
+    } else {
+      ctx.fillStyle = u.slowTimer > 0 ? '#7fb8d6' : u.color;
+      ctx.strokeStyle = u.darkColor;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      ctx.font = `${Math.round(r * 1.3)}px serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(u.t.icon, x, y + 1);
+      ctx.textBaseline = 'alphabetic';
+    }
 
-    // icon
-    ctx.font = `${Math.round(r * 1.3)}px serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(u.t.icon, x, y + 1);
-    ctx.textBaseline = 'alphabetic';
+    ctx.globalAlpha = 1;
+    if (!alive) return; // no HP bar / skill ring on corpses
 
     // hp bar
     const w = r * 2, hpct = u.hp / u.maxHp;
@@ -168,6 +179,38 @@ export class Renderer {
       ctx.arc(x, y, r + 5, -Math.PI / 2, -Math.PI / 2 + gpct * Math.PI * 2);
       ctx.stroke();
     }
+  }
+
+  // Draw the current animation frame for a unit, anchored at its feet and
+  // flipped to face its travel direction. Falls back gracefully if a clip for
+  // the current state is missing (e.g. no death animation -> uses run/attack).
+  drawSprite(ctx, u, sprite, r) {
+    const state = u.spriteState();
+    const clip = sprite[state] || sprite.run || sprite.attack || sprite.skill || sprite.death;
+    if (!clip || !clip.frames.length) return;
+
+    const a = u._anim || (u._anim = { state: null, idx: 0, t: 0 });
+    if (a.state !== state) { a.state = state; a.idx = 0; a.t = 0; }
+    const i = advanceFrame(a, clip.frames.length, clip.fps, clip.loop, this.dt);
+
+    const f = clip.frames[i];
+    const img = f.img;
+    const sw = f.sw || img.naturalWidth || img.width;
+    const sh = f.sh || img.naturalHeight || img.height;
+    if (!sw || !sh) return;
+
+    const targetH = r * 3.4;            // scale art relative to the unit's size
+    const scale = targetH / sh;
+    const w = sw * scale, h = sh * scale;
+
+    // Flip so the unit faces the way it's walking (art assumed to face right).
+    const flip = (u.side === 'enemy') === sprite.facesRight;
+
+    ctx.save();
+    ctx.translate(u.x, u.y + r * 0.9);  // anchor at the ground line
+    if (flip) ctx.scale(-1, 1);
+    ctx.drawImage(img, f.sx, f.sy, sw, sh, -w / 2, -h, w, h);
+    ctx.restore();
   }
 
   drawProjectile(ctx, p) {
