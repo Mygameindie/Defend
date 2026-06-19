@@ -33,6 +33,7 @@ function normalize(c) {
       kind,
       power: num(ability.power, 0),
       radius: num(ability.radius, 0),
+      duration: num(ability.duration, 4), // seconds for timed effects (buff/slow/immortal)
       // No ability => gauge never fills, so the special never lights up.
       gauge: kind === 'none' ? Infinity : num(ability.chargeTime, 8),
     },

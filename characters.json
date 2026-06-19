@@ -2,8 +2,9 @@
   "notes": [
     "Edit this file to add, remove, or rebalance characters. No code changes needed — just reload the page.",
     "Each character supports: id (unique), name, icon (emoji), cost, health, power, range, speed, attackSpeed, size, deployCooldown, playable, enemyCanUse, ability.",
-    "ability.type can be: 'aoe' (area blast, uses power + radius), 'pierce' (a piercing shot, uses power), 'shield' (gives nearby allies a shield equal to power), or 'none'.",
-    "ability.chargeTime = seconds until the special is ready to tap. Set playable:false for enemy-only units, enemyCanUse:false to keep one exclusive to you.",
+    "ability.type can be: 'aoe' (area damage, uses power + radius), 'pierce' (a piercing shot, uses power), 'heal' (restore power HP to nearby allies, uses radius), 'shield' (give allies a shield equal to power, uses radius), 'immortal' (make nearby allies invulnerable for duration seconds, uses radius), 'buff' (boost nearby allies' attack by power percent for duration seconds, uses radius), 'slow' (slow enemies by power percent for duration seconds, uses radius), or 'none'.",
+    "ability fields: power (amount or percent), radius (area), duration (seconds, for immortal/buff/slow), chargeTime (seconds until ready to tap).",
+    "Set playable:false for enemy-only units, enemyCanUse:false to keep one exclusive to you.",
     "Defaults fill in any field you omit, so a character only really needs an id."
   ],
   "characters": [
@@ -91,6 +92,50 @@
         "power": 120,
         "radius": 110,
         "chargeTime": 5
+      }
+    },
+    {
+      "id": "medic",
+      "name": "Medic",
+      "icon": "💉",
+      "cost": 30,
+      "health": 90,
+      "power": 6,
+      "range": 90,
+      "speed": 50,
+      "attackSpeed": 1.2,
+      "size": 13,
+      "deployCooldown": 4.0,
+      "playable": true,
+      "enemyCanUse": false,
+      "ability": {
+        "name": "Field Heal",
+        "type": "heal",
+        "power": 120,
+        "radius": 120,
+        "chargeTime": 7
+      }
+    },
+    {
+      "id": "paladin",
+      "name": "Paladin",
+      "icon": "✨",
+      "cost": 50,
+      "health": 300,
+      "power": 16,
+      "range": 32,
+      "speed": 40,
+      "attackSpeed": 1.0,
+      "size": 17,
+      "deployCooldown": 6.0,
+      "playable": true,
+      "enemyCanUse": false,
+      "ability": {
+        "name": "Divine Aegis",
+        "type": "immortal",
+        "radius": 100,
+        "duration": 3.5,
+        "chargeTime": 10
       }
     }
   ]

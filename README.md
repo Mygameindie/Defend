@@ -88,12 +88,34 @@ page; no code changes needed. Each entry looks like:
 
 ### Ability types
 
-- `aoe` — area blast at the unit, using `power` and `radius`.
-- `pierce` — fast shot that passes through enemies, using `power`.
-- `shield` — grants nearby allies a shield equal to `power`.
-- `none` (or omitted) — the unit simply has no special.
+| `type`     | Effect                                                     | Uses |
+|------------|------------------------------------------------------------|------|
+| `aoe`      | Area damage burst around the unit                          | `power`, `radius` |
+| `pierce`   | Fast shot that passes through multiple enemies             | `power` |
+| `slow`     | Slows enemies in range by `power`% for `duration`s         | `power`, `radius`, `duration` |
+| `heal`     | Restores `power` HP to nearby allies                       | `power`, `radius` |
+| `shield`   | Gives nearby allies a damage-absorbing shield of `power`   | `power`, `radius` |
+| `immortal` | Makes nearby allies invulnerable for `duration`s (alias `invincible`) | `radius`, `duration` |
+| `buff`     | Boosts nearby allies' attack by `power`% for `duration`s   | `power`, `radius`, `duration` |
+| `none`     | No special (also the default if `ability` is omitted)      | — |
 
-`ability.chargeTime` is how many seconds until the special is ready to tap.
+Common ability fields:
+- `chargeTime` — seconds until the special lights up and is tappable.
+- `power` — amount or percent, depending on the type (HP healed, % slow, etc.).
+- `radius` — area of effect in px.
+- `duration` — seconds the timed effect lasts (`immortal`, `buff`, `slow`).
+
+The shipped **Medic** (`heal`) and **Paladin** (`immortal`) characters are
+working examples of support skills.
+
+### Adding a *brand-new* kind of skill
+
+The types above are data — you just pick one in `characters.json`. To invent a
+genuinely new effect (e.g. `summon`, `freeze`, `lifesteal`), add one `case` to
+the `switch (s.kind)` in `activateSkill()` in `src/game.js`. Timed effects can
+reuse the status fields on `Unit` (`invuln`, `atkMult`/`atkBuffTimer`,
+`slowFactor`/`slowTimer`) in `src/entities.js`, or add your own there. Once the
+case exists, every character can use it from JSON.
 
 Tips: set `playable: false` for an enemy-only boss; set `enemyCanUse: false`
 to keep a unit exclusive to you. Any omitted field falls back to its default,

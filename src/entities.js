@@ -25,8 +25,15 @@ export class Unit {
     this.gaugeMax = template.skill.gauge;
     this.skillReady = false;
 
-    // transient combat shield (from tank skill)
+    // transient combat shield (from shield skill)
     this.shield = 0;
+
+    // timed status effects (set by skills, counted down each frame)
+    this.invuln = 0;       // seconds of immortality remaining
+    this.atkMult = 1;      // attack multiplier (from buff)
+    this.atkBuffTimer = 0; // seconds the buff lasts
+    this.slowFactor = 1;   // <1 while slowed
+    this.slowTimer = 0;    // seconds the slow lasts
 
     // little bob animation
     this.bob = Math.random() * Math.PI * 2;
@@ -35,7 +42,12 @@ export class Unit {
   get color() { return this.side === 'player' ? COLORS.player : COLORS.enemy; }
   get darkColor() { return this.side === 'player' ? COLORS.playerDark : COLORS.enemyDark; }
 
+  // Effective stats after active status effects.
+  get attack() { return this.t.atk * this.atkMult; }
+  get moveSpeed() { return this.t.speed * (this.slowTimer > 0 ? this.slowFactor : 1); }
+
   takeDamage(amount) {
+    if (this.invuln > 0) return;     // immortal: ignore all damage
     if (this.shield > 0) {
       const absorbed = Math.min(this.shield, amount);
       this.shield -= absorbed;
@@ -43,6 +55,21 @@ export class Unit {
     }
     this.hp -= amount;
     if (this.hp <= 0) { this.hp = 0; this.dead = true; }
+  }
+
+  heal(amount) { this.hp = Math.min(this.maxHp, this.hp + amount); }
+
+  // Tick down timed status effects.
+  updateStatuses(dt) {
+    if (this.invuln > 0) this.invuln = Math.max(0, this.invuln - dt);
+    if (this.atkBuffTimer > 0) {
+      this.atkBuffTimer -= dt;
+      if (this.atkBuffTimer <= 0) this.atkMult = 1;
+    }
+    if (this.slowTimer > 0) {
+      this.slowTimer -= dt;
+      if (this.slowTimer <= 0) this.slowFactor = 1;
+    }
   }
 
   // Build skill gauge over time while alive (player only).

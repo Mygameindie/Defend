@@ -70,37 +70,94 @@ export class Game {
     return best;
   }
 
+  // Allies on `unit`'s side within `radius` px (used by support skills).
+  alliesNear(unit, radius) {
+    return this.units.filter(a =>
+      a.side === unit.side && !a.dead && Math.abs(a.x - unit.x) <= radius);
+  }
+
   activateSkill(unit) {
     if (!unit || !unit.skillReady || unit.dead) return false;
     const s = unit.t.skill;
     unit.skillReady = false;
     unit.gauge = 0;
 
-    if (s.kind === 'aoe') {
-      const cx = unit.x + unit.dir * (s.radius * 0.4);
-      this.damageArea(cx, unit.y, s.radius, s.power, 'enemy', unit.color);
-      this.effects.push(new FloatingEffect(cx, unit.y, {
-        kind: 'blast', color: unit.color, maxRadius: s.radius, life: 0.45,
-      }));
-    } else if (s.kind === 'pierce') {
-      const p = new Projectile(unit.x, unit.y - 8, 'enemy', s.power, '#ffe08a', true);
-      p.speed = 520;
-      this.projectiles.push(p);
-    } else if (s.kind === 'shield') {
-      // shield self + nearby allies
-      for (const a of this.units) {
-        if (a.side === 'player' && !a.dead && Math.abs(a.x - unit.x) < 90) {
-          a.shield += s.power;
-        }
+    switch (s.kind) {
+      // ---- offensive ----
+      case 'aoe': {                 // area damage burst around the unit
+        const cx = unit.x + unit.dir * (s.radius * 0.4);
+        this.damageArea(cx, unit.y, s.radius, s.power, 'enemy', unit.color);
+        this.effects.push(new FloatingEffect(cx, unit.y, {
+          kind: 'blast', color: unit.color, maxRadius: s.radius, life: 0.45,
+        }));
+        break;
       }
-      this.effects.push(new FloatingEffect(unit.x, unit.y - 20, {
-        kind: 'text', text: '🛡 SHIELD', color: '#9fe7ff', life: 0.9,
-      }));
+      case 'pierce': {              // fast shot that passes through enemies
+        const p = new Projectile(unit.x, unit.y - 8, 'enemy', s.power, '#ffe08a', true);
+        p.speed = 520;
+        this.projectiles.push(p);
+        break;
+      }
+      case 'slow': {                // slow nearby enemies for `duration`s
+        const r = s.radius || 120;
+        const factor = Math.max(0.05, 1 - s.power / 100); // power = % slow
+        for (const e of this.units) {
+          if (e.side === 'enemy' && !e.dead && Math.abs(e.x - unit.x) <= r) {
+            e.slowFactor = factor;
+            e.slowTimer = Math.max(e.slowTimer, s.duration);
+          }
+        }
+        this.effects.push(new FloatingEffect(unit.x, unit.y - 20, {
+          kind: 'text', text: '❄ SLOW', color: '#9fd4ff', life: 0.9,
+        }));
+        break;
+      }
+
+      // ---- support (affect allies near the caster) ----
+      case 'shield': {              // absorb-damage shield
+        for (const a of this.alliesNear(unit, s.radius || 90)) a.shield += s.power;
+        this.popText(unit, '🛡 SHIELD', '#9fe7ff');
+        break;
+      }
+      case 'heal': {                // restore HP to nearby allies
+        for (const a of this.alliesNear(unit, s.radius || 110)) {
+          a.heal(s.power);
+          this.effects.push(new FloatingEffect(a.x, a.y - 14, {
+            kind: 'text', text: '+' + Math.round(s.power), color: '#7ee787', life: 0.6, vy: -40,
+          }));
+        }
+        this.popText(unit, '✚ HEAL', '#7ee787');
+        break;
+      }
+      case 'invincible':            // a.k.a. "immortal"
+      case 'immortal': {            // make nearby allies invulnerable briefly
+        for (const a of this.alliesNear(unit, s.radius || 90)) {
+          a.invuln = Math.max(a.invuln, s.duration);
+        }
+        this.popText(unit, '✦ IMMORTAL', '#ffd54a');
+        break;
+      }
+      case 'buff': {                // temporary attack boost (power = % bonus)
+        const mult = 1 + s.power / 100;
+        for (const a of this.alliesNear(unit, s.radius || 100)) {
+          a.atkMult = Math.max(a.atkMult, mult);
+          a.atkBuffTimer = Math.max(a.atkBuffTimer, s.duration);
+        }
+        this.popText(unit, '⚔ RAGE', '#ffb35c');
+        break;
+      }
+      default:
+        return false; // 'none' or unknown kind: nothing happens
     }
+
     this.effects.push(new FloatingEffect(unit.x, unit.y - 28, {
       kind: 'text', text: s.name + '!', color: COLORS.player, life: 0.9,
     }));
     return true;
+  }
+
+  popText(unit, text, color) {
+    this.effects.push(new FloatingEffect(unit.x, unit.y - 20, { kind: 'text', text, color, life: 0.9 }));
   }
 
   damageArea(cx, cy, radius, power, targetSide, color) {
@@ -174,6 +231,7 @@ export class Game {
       if (u.dead) continue;
       u.bob += dt * 6;
       u.chargeGauge(dt);
+      u.updateStatuses(dt);
       if (u.atkTimer > 0) u.atkTimer -= dt;
 
       const target = this.findTarget(u);
@@ -190,8 +248,8 @@ export class Game {
           continue;
         }
       }
-      // March forward.
-      u.x += u.t.speed * u.dir * dt;
+      // March forward (slowed if a slow effect is active).
+      u.x += u.moveSpeed * u.dir * dt;
       // clamp so units don't walk into the opposing base spawn
       u.x = Math.max(WORLD.playerBaseX, Math.min(WORLD.enemyBaseX, u.x));
     }
@@ -218,19 +276,20 @@ export class Game {
   }
 
   performAttack(u, target) {
+    const dmg = u.attack; // includes buff multiplier
     if (u.t.range > 70) {
       // ranged: fire a projectile
       const color = u.side === 'player' ? '#bdfffb' : '#ffd0d0';
       this.projectiles.push(new Projectile(u.x + u.dir * 8, u.y - 8,
-        u.side === 'player' ? 'enemy' : 'player', u.t.atk, color));
+        u.side === 'player' ? 'enemy' : 'player', dmg, color));
     } else {
       // melee: instant hit
       if (target.kind === 'base') {
-        target.ref.takeDamage(u.t.atk);
-        this.spawnHit(target.x + (u.dir < 0 ? target.radius : -target.radius), u.y - 10, u.t.atk, u.color);
+        target.ref.takeDamage(dmg);
+        this.spawnHit(target.x + (u.dir < 0 ? target.radius : -target.radius), u.y - 10, dmg, u.color);
       } else {
-        target.takeDamage(u.t.atk);
-        this.spawnHit(target.x, target.y, u.t.atk, u.color);
+        target.takeDamage(dmg);
+        this.spawnHit(target.x, target.y, dmg, u.color);
       }
     }
   }

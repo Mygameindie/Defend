@@ -110,9 +110,26 @@ export class Renderer {
       ctx.arc(x, y, r + 5, 0, Math.PI * 2);
       ctx.stroke();
     }
+    // immortal aura: pulsing gold halo
+    if (u.invuln > 0) {
+      const p = 0.5 + 0.5 * Math.sin(Date.now() / 90);
+      ctx.strokeStyle = `rgba(255,213,74,${0.6 + p * 0.4})`;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(x, y, r + 8, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    // attack buff: red glow ring
+    if (u.atkBuffTimer > 0) {
+      ctx.strokeStyle = 'rgba(255,140,80,0.85)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(x, y, r + 3, 0, Math.PI * 2);
+      ctx.stroke();
+    }
 
-    // body
-    ctx.fillStyle = u.color;
+    // body (tinted cyan while slowed)
+    ctx.fillStyle = u.slowTimer > 0 ? '#7fb8d6' : u.color;
     ctx.strokeStyle = u.darkColor;
     ctx.lineWidth = 2;
     ctx.beginPath();
