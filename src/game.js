@@ -1,5 +1,6 @@
 // Core game state, simulation loop, combat resolution, and enemy AI.
-import { WORLD, ENERGY, UNITS, ENEMY_AI, COLORS } from './config.js';
+import { WORLD, ENERGY, ENEMY_AI, COLORS } from './config.js';
+import { UNITS, ENEMY_ROSTER } from './characters.js';
 import { Unit, Base, Projectile, FloatingEffect } from './entities.js';
 
 export class Game {
@@ -153,14 +154,14 @@ export class Game {
     this.enemyThinkTimer = ENEMY_AI.thinkEvery;
 
     // Difficulty ramps: enemy gets slightly hungrier over time.
-    const affordable = ENEMY_AI.roster.filter(id => this.enemyEnergy >= UNITS[id].cost);
+    const affordable = ENEMY_ROSTER.filter(id => this.enemyEnergy >= UNITS[id].cost);
     if (affordable.length === 0) return;
 
-    // Bias: if many player units are pushing, prefer tanks/bombers.
+    // Bias: when the player is pushing, field the toughest affordable unit.
     const playerPush = this.units.filter(u => u.side === 'player' && u.x > WORLD.width * 0.5).length;
     let pick;
-    if (playerPush >= 2 && this.enemyEnergy >= UNITS.tank.cost && Math.random() < 0.5) {
-      pick = 'tank';
+    if (playerPush >= 2 && Math.random() < 0.5) {
+      pick = affordable.reduce((a, b) => (UNITS[b].hp > UNITS[a].hp ? b : a));
     } else {
       pick = affordable[Math.floor(Math.random() * affordable.length)];
     }

@@ -1,0 +1,97 @@
+{
+  "notes": [
+    "Edit this file to add, remove, or rebalance characters. No code changes needed — just reload the page.",
+    "Each character supports: id (unique), name, icon (emoji), cost, health, power, range, speed, attackSpeed, size, deployCooldown, playable, enemyCanUse, ability.",
+    "ability.type can be: 'aoe' (area blast, uses power + radius), 'pierce' (a piercing shot, uses power), 'shield' (gives nearby allies a shield equal to power), or 'none'.",
+    "ability.chargeTime = seconds until the special is ready to tap. Set playable:false for enemy-only units, enemyCanUse:false to keep one exclusive to you.",
+    "Defaults fill in any field you omit, so a character only really needs an id."
+  ],
+  "characters": [
+    {
+      "id": "ranger",
+      "name": "Ranger",
+      "icon": "🗡️",
+      "cost": 20,
+      "health": 120,
+      "power": 18,
+      "range": 34,
+      "speed": 60,
+      "attackSpeed": 0.7,
+      "size": 14,
+      "deployCooldown": 2.0,
+      "playable": true,
+      "enemyCanUse": true,
+      "ability": {
+        "name": "Slash Burst",
+        "type": "aoe",
+        "power": 60,
+        "radius": 80,
+        "chargeTime": 6
+      }
+    },
+    {
+      "id": "archer",
+      "name": "Archer",
+      "icon": "🏹",
+      "cost": 28,
+      "health": 70,
+      "power": 14,
+      "range": 150,
+      "speed": 52,
+      "attackSpeed": 0.9,
+      "size": 12,
+      "deployCooldown": 2.5,
+      "playable": true,
+      "enemyCanUse": true,
+      "ability": {
+        "name": "Volley",
+        "type": "pierce",
+        "power": 40,
+        "chargeTime": 7
+      }
+    },
+    {
+      "id": "tank",
+      "name": "Tank",
+      "icon": "🛡️",
+      "cost": 45,
+      "health": 420,
+      "power": 12,
+      "range": 30,
+      "speed": 36,
+      "attackSpeed": 1.1,
+      "size": 18,
+      "deployCooldown": 5.0,
+      "playable": true,
+      "enemyCanUse": true,
+      "ability": {
+        "name": "Taunt Wall",
+        "type": "shield",
+        "power": 200,
+        "chargeTime": 9
+      }
+    },
+    {
+      "id": "bomber",
+      "name": "Bomber",
+      "icon": "💣",
+      "cost": 38,
+      "health": 90,
+      "power": 8,
+      "range": 40,
+      "speed": 70,
+      "attackSpeed": 1.0,
+      "size": 14,
+      "deployCooldown": 4.0,
+      "playable": true,
+      "enemyCanUse": true,
+      "ability": {
+        "name": "Big Boom",
+        "type": "aoe",
+        "power": 120,
+        "radius": 110,
+        "chargeTime": 5
+      }
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 // HUD wiring: HP/energy meters and the deployable unit dock.
-import { UNITS, DOCK_ORDER } from './config.js';
+import { UNITS, DOCK_ORDER } from './characters.js';
 
 export class UI {
   constructor(game) {

@@ -21,74 +21,13 @@ export const ENERGY = {
   capGrowthPerSec: 1.4 // max energy slowly grows so late game scales
 };
 
-// Faction-agnostic unit templates. `range` is attack reach in px,
-// `speed` is px/sec, `cooldown` is seconds between attacks.
-export const UNITS = {
-  ranger: {
-    id: 'ranger',
-    name: 'Ranger',
-    icon: '🗡️',
-    cost: 20,
-    hp: 120,
-    atk: 18,
-    range: 34,
-    speed: 60,
-    cooldown: 0.7,
-    radius: 14,
-    deployCd: 2.0,      // button cooldown
-    skill: { name: 'Slash Burst', gauge: 6, kind: 'aoe', power: 60, radius: 80 },
-  },
-  archer: {
-    id: 'archer',
-    name: 'Archer',
-    icon: '🏹',
-    cost: 28,
-    hp: 70,
-    atk: 14,
-    range: 150,
-    speed: 52,
-    cooldown: 0.9,
-    radius: 12,
-    deployCd: 2.5,
-    skill: { name: 'Volley', gauge: 7, kind: 'pierce', power: 40 },
-  },
-  tank: {
-    id: 'tank',
-    name: 'Tank',
-    icon: '🛡️',
-    cost: 45,
-    hp: 420,
-    atk: 12,
-    range: 30,
-    speed: 36,
-    cooldown: 1.1,
-    radius: 18,
-    deployCd: 5.0,
-    skill: { name: 'Taunt Wall', gauge: 9, kind: 'shield', power: 200 },
-  },
-  bomber: {
-    id: 'bomber',
-    name: 'Bomber',
-    icon: '💣',
-    cost: 38,
-    hp: 90,
-    atk: 8,
-    range: 40,
-    speed: 70,
-    cooldown: 1.0,
-    radius: 14,
-    deployCd: 4.0,
-    skill: { name: 'Big Boom', gauge: 5, kind: 'aoe', power: 120, radius: 110 },
-  },
-};
+// Character/unit definitions live in characters.json (loaded at startup via
+// src/characters.js). Edit that file to add or rebalance characters.
 
-// Order units appear in the dock.
-export const DOCK_ORDER = ['ranger', 'archer', 'tank', 'bomber'];
-
-// Enemy AI: which units it can field and how aggressively it spends.
+// Enemy AI economy + cadence. The roster of units it can field is derived
+// from characters.json (any character with "enemyCanUse" left on).
 export const ENEMY_AI = {
   energy: { start: 30, max: 120, regenPerSec: 8, capGrowthPerSec: 1.4 },
-  roster: ['ranger', 'archer', 'tank', 'bomber'],
   thinkEvery: 1.1,     // seconds between deploy decisions
 };
 
