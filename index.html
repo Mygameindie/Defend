@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Defend — Line Ranger Style Battle</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div id="app">
+    <header id="topbar">
+      <div class="bar">
+        <span class="label">HP</span>
+        <div class="meter hp"><div id="playerHpFill" class="fill"></div></div>
+      </div>
+      <div id="status">DEFEND</div>
+      <div class="bar">
+        <div class="meter hp enemy"><div id="enemyHpFill" class="fill"></div></div>
+        <span class="label">ENEMY</span>
+      </div>
+    </header>
+
+    <div id="stage">
+      <canvas id="game" width="960" height="420"></canvas>
+
+      <!-- Overlays -->
+      <div id="overlay" class="overlay">
+        <div class="panel">
+          <h1>DEFEND</h1>
+          <p class="sub">A Line Ranger–style lane battle</p>
+          <ul class="how">
+            <li>Energy refills over time — spend it to deploy units.</li>
+            <li>Units march right and auto-attack the enemy.</li>
+            <li>Click a glowing ranger to fire its special skill.</li>
+            <li>Destroy the enemy base before they destroy yours.</li>
+          </ul>
+          <button id="startBtn" class="big">START BATTLE</button>
+        </div>
+      </div>
+
+      <div id="result" class="overlay hidden">
+        <div class="panel">
+          <h1 id="resultTitle">VICTORY</h1>
+          <p id="resultSub" class="sub"></p>
+          <button id="againBtn" class="big">PLAY AGAIN</button>
+        </div>
+      </div>
+    </div>
+
+    <footer id="dock">
+      <div id="energyWrap">
+        <div class="meter energy"><div id="energyFill" class="fill"></div></div>
+        <span id="energyText">0 / 0</span>
+      </div>
+      <div id="unitBar"><!-- unit buttons injected here --></div>
+    </footer>
+  </div>
+
+  <script type="module" src="src/main.js"></script>
+</body>
+</html>
